@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -24,22 +24,43 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 INCLUDEPATH += \
         $$PWD/FLIR/lib \
-        $$PWD/FLIR/include
+        $$PWD/FLIR/include \
+        $$PWD/spectrum/app \
+        $$PWD/spectrum/3rdparty/fftreal
 
 DEPENDPATH += \
         $$PWD/FLIR/lib \
         $$PWD/FLIR/include
 
-SOURCES += \
+SOURCES += \# Main Stuff
         main.cpp \
         mainwindow.cpp \
-    logger.cpp \
-    flir.cpp
+        logger.cpp \# Logger
+        flir.cpp \# FLIR
+        fftinterface.cpp \# Microphone FFT Stuff
+        $$PWD/spectrum/app/spectrograph.cpp \
+        $$PWD/spectrum/app/frequencyspectrum.cpp \
+        $$PWD/spectrum/app/engine.cpp \
+        $$PWD/spectrum/app/spectrumanalyser.cpp \
+        $$PWD/spectrum/app/wavfile.cpp \
+        $$PWD/spectrum/app/utils.cpp \
+        $$PWD/spectrum/app/tonegenerator.cpp \
+        $$PWD/spectrum/3rdparty/fftreal/fftreal_wrapper.cpp
 
-HEADERS += \
+HEADERS += \# Main Stuff
         mainwindow.h \
-    logger.h \
-    flir.h
+        logger.h \# Logger
+        flir.h \# FLIR
+        fftinterface.h \# Microphone FFT Stuff
+        $$PWD/spectrum/app/spectrograph.h \
+        $$PWD/spectrum/app/frequencyspectrum.h \
+        $$PWD/spectrum/app/engine.h \
+        $$PWD/spectrum/app/spectrumanalyser.h \
+        $$PWD/spectrum/app/spectrum.h \
+        $$PWD/spectrum/app/wavfile.h \
+        $$PWD/spectrum/app/utils.h \
+        $$PWD/spectrum/app/tonegenerator.h \
+        $$PWD/spectrum/3rdparty/fftreal/fftreal_wrapper.h
 
 FORMS += \
         mainwindow.ui
