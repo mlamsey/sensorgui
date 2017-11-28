@@ -755,35 +755,43 @@ void Engine::createOutputDir()
     } else {
         QDir::current().mkpath(dir);
     }
-    qDebug()<<m_outputDir.path();
+    //qDebug()<<m_outputDir.path();
 }
 #endif // DUMP_DATA
 
 #ifdef DUMP_AUDIO
 void Engine::dumpData()
 {
-    QString time = QTime::currentTime().toString();
-    time.replace(":","_");
+    if(savingData)
+    {
+        QString time = QTime::currentTime().toString();
+        time.replace(":","_");
 
-    const QString txtFileName = m_outputDir.filePath(time + ".txt");qDebug()<<QDir::currentPath();
-    QFile txtFile(txtFileName);
-    txtFile.open(QFile::WriteOnly | QFile::Text);
-    QTextStream stream(&txtFile);
-    const qint16 *ptr = reinterpret_cast<const qint16*>(m_buffer.constData());
-    const int numSamples = m_dataLength / (2 * m_format.channelCount());
-    for (int i=0; i<numSamples; ++i) {
-        stream << i << "\t" << *ptr << "\n";
-        ptr += m_format.channelCount();
+        const QString txtFileName = m_outputDir.filePath(time + ".txt");//qDebug()<<QDir::currentPath();
+        QFile txtFile(txtFileName);
+        txtFile.open(QFile::WriteOnly | QFile::Text);
+        QTextStream stream(&txtFile);
+        const qint16 *ptr = reinterpret_cast<const qint16*>(m_buffer.constData());
+        const int numSamples = m_dataLength / (2 * m_format.channelCount());
+        for (int i=0; i<numSamples; ++i) {
+            stream << i << "\t" << *ptr << "\n";
+            ptr += m_format.channelCount();
+        }
+
+        const QString pcmFileName = m_outputDir.filePath(time + ".pcm");
+        QFile pcmFile(pcmFileName);
+        pcmFile.open(QFile::WriteOnly);
+        pcmFile.write(m_buffer.constData(), m_dataLength);
     }
-
-    const QString pcmFileName = m_outputDir.filePath(time + ".pcm");
-    QFile pcmFile(pcmFileName);
-    pcmFile.open(QFile::WriteOnly);
-    pcmFile.write(m_buffer.constData(), m_dataLength);
 }
 #endif // DUMP_AUDIO
 
 void Engine::stopRecordingSlot()
 {
     stopRecording();
+}
+
+void Engine::toggleSavingData(bool state)
+{
+    savingData = state;
 }

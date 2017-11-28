@@ -29,44 +29,44 @@ void fftinterface::runFFT()
     if(!running)
     {
         running = true;
-        int currentTime = QDateTime::currentMSecsSinceEpoch();
-        int prevTime = currentTime;
-        int dT;
-
-        // Begin Recording
         startEngineRecording();
-
-        // Restarts the "recording" after the buffer (engine.h) expires
-        while (running)
-        {
-            currentTime = QDateTime::currentMSecsSinceEpoch();
-            dT = currentTime - prevTime;
-
-            if (dT >= bufferTime)
-            {
-                qDebug()<<"Retriggered FFT Buffer";
-                prevTime = currentTime;
-                //startEngineRecording();
-                resetBuffer();
-                startEngineRecording();
-            }
-
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-        }//while
-
-    }//if
-
+    }
     else
     {
         running = false;
         pauseEngineRecording();
     }
+    trackTime();
 }
 
 void fftinterface::stopFFT()
 {
     running = false;
     stopEngineRecording();
+}
+
+void fftinterface::trackTime() // Restarts the "recording" after the buffer (engine.h) expires
+{
+    int currentTime = QDateTime::currentMSecsSinceEpoch();
+    int prevTime = currentTime;
+    int dT;
+
+    while (running)
+    {
+        currentTime = QDateTime::currentMSecsSinceEpoch();
+        dT = currentTime - prevTime;
+
+        if (dT >= bufferTime)
+        {
+            qDebug()<<"Retriggered FFT Buffer";
+            prevTime = currentTime;
+            //startEngineRecording();
+            resetBuffer();
+            startEngineRecording();
+        }
+
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    }//while
 }
 
 void fftinterface::spectrumChanged(qint64 spectrumPosition,
@@ -77,17 +77,19 @@ void fftinterface::spectrumChanged(qint64 spectrumPosition,
     emit sendSpectrum(spectrum); // routes signal from spectrum to widget
 
     // Refresh Rate
+    currentSpectrumTime = std::chrono::high_resolution_clock::now();
+    auto dT = currentSpectrumTime - prevSpectrumTime;
     prevSpectrumTime = currentSpectrumTime;
-    currentSpectrumTime = QDateTime::currentMSecsSinceEpoch();
-    int dT = currentSpectrumTime-prevSpectrumTime;
-    sendRefreshRate(dT);
+    long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(dT).count();
+    if(microseconds > 1000*m_engine->NotifyIntervalMs)
+        sendRefreshRate(microseconds);
 }
 
 void fftinterface::startRecording()
 {
     startEngineRecording();
     sendRefreshRate(m_engine->NotifyIntervalMs);
-    currentSpectrumTime = QDateTime::currentMSecsSinceEpoch();
+    currentSpectrumTime = std::chrono::high_resolution_clock::now();
 }
 
 void fftinterface::setupConnections()
@@ -99,6 +101,7 @@ void fftinterface::setupConnections()
     connect(this,SIGNAL(sendVisualizerGain(double)),m_engine,SLOT(getVisualizerGain(double)));
     connect(this,SIGNAL(resetBuffer()),m_engine,SLOT(resetEngineTimeout()));
     connect(this,SIGNAL(stopEngineRecording()),m_engine,SLOT(stopRecordingSlot()));
+    connect(this,SIGNAL(toggleSavingData(bool)),m_engine,SLOT(toggleSavingData(bool)));
 }
 
 void fftinterface::getVisualizerGain(double gain)
@@ -111,4 +114,9 @@ void fftinterface::targetFreqSlot()
     int* freqptr;
     freqptr = targetFrequencies;
     sendTargetFrequencies(freqptr,maximumIntensity);
+}
+
+void fftinterface::toggleMicrophoneSaving(bool state)
+{
+    toggleSavingData(state);
 }

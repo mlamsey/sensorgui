@@ -172,6 +172,7 @@ public:
      */
     void setWindowFunction(WindowFunction type);
 
+    bool savingData = false;
 public slots:
     void startRecording();
     void startPlayback();
@@ -182,6 +183,7 @@ public slots:
 
     void getVisualizerGain(double gain); // UTK WELDING
     void resetEngineTimeout(); // UTK WELDING
+    void toggleSavingData(bool state); // UTK WELDING
 
 signals:
     void stateChanged(QAudio::Mode mode, QAudio::State state);

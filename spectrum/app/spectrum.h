@@ -54,7 +54,7 @@ const int    SpectrumLengthSamples  = PowerOfTwo<FFTLengthPowerOfTwo>::Result;
 
 // Number of bands in the frequency spectrum
 // Some good values: 160, 80, 40, 20
-const int    SpectrumNumBands       = 80;
+const int    SpectrumNumBands       = 40;
 
 // Lower bound of first band in the spectrum
 const qreal  SpectrumLowFreq        = 50.0; // Hz

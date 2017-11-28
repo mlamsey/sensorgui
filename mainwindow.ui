@@ -852,10 +852,10 @@
    <widget class="QFrame" name="ArcAgentFrame">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>280</y>
+      <x>670</x>
+      <y>277</y>
       <width>328</width>
-      <height>228</height>
+      <height>230</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -1014,9 +1014,9 @@
     <property name="geometry">
      <rect>
       <x>340</x>
-      <y>510</y>
+      <y>277</y>
       <width>328</width>
-      <height>138</height>
+      <height>371</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -1034,7 +1034,7 @@
        <x>4</x>
        <y>4</y>
        <width>320</width>
-       <height>130</height>
+       <height>361</height>
       </rect>
      </property>
      <property name="palette">
@@ -1052,27 +1052,27 @@
         <colorrole role="Button">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
         <colorrole role="Base">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
         <colorrole role="Window">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
@@ -1090,27 +1090,27 @@
         <colorrole role="Button">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
         <colorrole role="Base">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
         <colorrole role="Window">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
@@ -1128,27 +1128,27 @@
         <colorrole role="Button">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
         <colorrole role="Base">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
         <colorrole role="Window">
          <brush brushstyle="SolidPattern">
           <color alpha="255">
-           <red>0</red>
-           <green>0</green>
-           <blue>0</blue>
+           <red>192</red>
+           <green>192</green>
+           <blue>192</blue>
           </color>
          </brush>
         </colorrole>
@@ -1161,10 +1161,86 @@
       </font>
      </property>
      <property name="styleSheet">
-      <string notr="true">background: black</string>
+      <string notr="true">background: silver</string>
      </property>
      <property name="text">
-      <string>MICROPHONE</string>
+      <string/>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="list_clipEvents">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>161</width>
+       <height>111</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_gain">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>10</y>
+       <width>141</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Gain:</string>
+     </property>
+    </widget>
+    <widget class="QSlider" name="gainSlider">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>40</y>
+       <width>131</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_refreshRate">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>70</y>
+       <width>131</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Refresh Rate:</string>
+     </property>
+    </widget>
+    <widget class="QWidget" name="layoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>130</y>
+       <width>311</width>
+       <height>211</height>
+      </rect>
+     </property>
+     <layout class="QHBoxLayout" name="spectrograph"/>
+    </widget>
+    <widget class="QLabel" name="xAxisLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>340</y>
+       <width>309</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>X Axis Label</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -1175,9 +1251,9 @@
     <property name="geometry">
      <rect>
       <x>670</x>
-      <y>280</y>
+      <y>510</y>
       <width>328</width>
-      <height>368</height>
+      <height>138</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -1195,7 +1271,7 @@
        <x>4</x>
        <y>4</y>
        <width>321</width>
-       <height>360</height>
+       <height>130</height>
       </rect>
      </property>
      <property name="palette">
@@ -1332,6 +1408,13 @@
      </property>
     </widget>
    </widget>
+   <zorder>MicrophoneFrame</zorder>
+   <zorder>recordingControlBox</zorder>
+   <zorder>FLIRFrame</zorder>
+   <zorder>ueFrame</zorder>
+   <zorder>IntertestFrame</zorder>
+   <zorder>ArcAgentFrame</zorder>
+   <zorder>KeyenceFrame</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

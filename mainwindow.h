@@ -1,11 +1,15 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "spectrograph.h"
+#include "utils.h"
+
 #include <QMainWindow>
 #include <QTime>
 #include <QThread>
 #include "logger.h"
 #include "flir.h"
+#include "fftinterface.h"
 
 namespace Ui {
 class MainWindow;
@@ -15,9 +19,19 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+public slots:
+    // FFT Slots
+    void getFFTSpectrum(const FrequencySpectrum &spectrum);
+    void getFFTRefreshRate(long long refreshRateUs);
+    void getTargetFrequencies(int*freq, int *max);
+    void getTargetFrequencyClipped(int freqIndex);
 
 private slots:
     void on_StartRecordingButton_clicked();
@@ -37,10 +51,15 @@ private slots:
     void getFLIRConnection(bool state);
     void getFLIRFrameCount(int count);
 
+    // Microphone
+    void updateToggleButton();
+    void on_gainSlider_valueChanged(int value);
+
 private:
     Ui::MainWindow *ui;
     logger* log = new logger;
     flir* FLIR = new flir;
+    fftinterface* microphone = new fftinterface;
 
     void record();
     void delay(int millisecondsToWait);
@@ -75,9 +94,24 @@ private:
     double recordingSize = 0;
     int FLIRFrameCount = 0;
 
+    // Microphone
+    Spectrograph*   m_spectrograph;
+    int targetFrequencies[6];
+
+    void setupFFTDisplay();
+    void setupFFTConnections();
+
 signals:
     void flirRecordingToggle(bool state);
     void connectFLIRSignal();
+
+    // FFT
+    void runMicrophone();
+    void stopFFT();
+    void sendFFTVisualizerGain(double gain);
+    void fetchTargetFrequencies();
+    void sendFFTTargetFrequencies(int* frequencies,int* maximumIntensity);
+    void setMicrophoneSaving(bool state);
 };
 
 #endif // MAINWINDOW_H

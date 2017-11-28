@@ -1,9 +1,24 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QLabel>
+#include <QPushButton>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QStyle>
+#include <QMenu>
+#include <QFileDialog>
+#include <QTimerEvent>
+#include <QMessageBox>
+
+#include <QCloseEvent>
+
+#include "tgmath.h"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    m_spectrograph(new Spectrograph(this)) // Microphone Output
 {
     ui->setupUi(this);
     log->makeLog("Sensor GUI: ","debug");
@@ -37,6 +52,9 @@ MainWindow::MainWindow(QWidget *parent) :
     // Initialize Threads
     initFLIRThread();
 
+    // Initialize Microphone
+    setupFFTDisplay();
+    setupFFTConnections();
 }
 
 MainWindow::~MainWindow()
@@ -71,7 +89,10 @@ void MainWindow::record()
     if(ui->KeyenceToggle->isChecked())
         ui->recordingFeedback->addItem("Recording Keyence.");
     if(ui->MicrophoneToggle->isChecked())
+    {
         ui->recordingFeedback->addItem("Recording Microphone.");
+        setMicrophoneSaving(true);
+    }
     if(ui->ArcAgentToggle->isChecked())
         ui->recordingFeedback->addItem("Recording Arc Agent.");
 
@@ -103,18 +124,26 @@ void MainWindow::record()
         QCoreApplication::processEvents(QEventLoop::AllEvents,10);
     }
 
+    setMicrophoneSaving(false);
+
     log->msg("Recording Stopped.");
     log->statMessage("Recording Time: " + QString::number(recordingTime) + "sec");
     log->statMessage("FLIR Recording Size: " + QString::number(FLIRFrameCount*flir::flirFrameFileSize) + " bytes.");
     ui->recordingFeedback->addItem("Time: " + QString::number(recordingTime) + "sec");
 
     // Unlock recording devices
-    ui->FLIRToggle->setEnabled(true);
-    ui->IntertestToggle->setEnabled(true);
-    ui->ueToggle->setEnabled(true);
-    ui->KeyenceToggle->setEnabled(true);
-    ui->MicrophoneToggle->setEnabled(true);
-    ui->ArcAgentToggle->setEnabled(true);
+    if(FLIRConnected)
+        ui->FLIRToggle->setEnabled(true);
+    if(IntertestConnected)
+        ui->IntertestToggle->setEnabled(true);
+    if(UEConnected)
+        ui->ueToggle->setEnabled(true);
+    if(KeyenceConnected)
+        ui->KeyenceToggle->setEnabled(true);
+    if(MicrophoneConnected)
+        ui->MicrophoneToggle->setEnabled(true);
+    if(ArcAgentConnected)
+        ui->ArcAgentToggle->setEnabled(true);
 }
 
 void MainWindow::initArcAgentThread()
@@ -125,26 +154,26 @@ void MainWindow::initArcAgentThread()
 void MainWindow::initFLIRThread()
 {
     QThread* FLIRThread = new QThread;
-    flir* FLIRWorker = new flir;
+    //flir* FLIR = new flir;
 
-    FLIRWorker->moveToThread(FLIRThread);
+    FLIR->moveToThread(FLIRThread);
 
     // Connect to FLIR
-    connect(FLIRThread,SIGNAL(started()),FLIRWorker,SLOT(startFLIRThread()));
+    connect(FLIRThread,SIGNAL(started()),FLIR,SLOT(startFLIRThread()));
 
     // Cleanup Connections
-    connect(FLIRWorker,SIGNAL(finished()),FLIRThread,SLOT(quit()));
-    connect(FLIRWorker,SIGNAL(finished()),FLIRThread,SLOT(deleteLater()));
+    connect(FLIR,SIGNAL(finished()),FLIRThread,SLOT(quit()));
+    connect(FLIR,SIGNAL(finished()),FLIRThread,SLOT(deleteLater()));
     connect(FLIRThread,SIGNAL(finished()),FLIRThread,SLOT(deleteLater()));
 
-    connect(this,SIGNAL(connectFLIRSignal()),FLIRWorker,SLOT(initAcquisition()));
-    connect(FLIRWorker,SIGNAL(connection(bool)),this,SLOT(getFLIRConnection(bool)));
+    connect(this,SIGNAL(connectFLIRSignal()),FLIR,SLOT(initAcquisition()));
+    connect(FLIR,SIGNAL(connection(bool)),this,SLOT(getFLIRConnection(bool)));
 
-    connect(FLIRWorker,SIGNAL(sendLogMessage(QString,QString,QString)),this,SLOT(getLogMessage(QString,QString,QString)));
-    connect(FLIRWorker,SIGNAL(sendFrame(QPixmap)),this,SLOT(getFLIRFrame(QPixmap)));
-    connect(FLIRWorker,SIGNAL(sendFrameRate(double)),this,SLOT(getFLIRFrameRate(double)));
-    connect(this,SIGNAL(flirRecordingToggle(bool)),FLIRWorker,SLOT(record(bool)));
-    connect(FLIRWorker,SIGNAL(sendFrameCount(int)),this,SLOT(getFLIRFrameCount(int)));
+    connect(FLIR,SIGNAL(sendLogMessage(QString,QString,QString)),this,SLOT(getLogMessage(QString,QString,QString)));
+    connect(FLIR,SIGNAL(sendFrame(QPixmap)),this,SLOT(getFLIRFrame(QPixmap)));
+    connect(FLIR,SIGNAL(sendFrameRate(double)),this,SLOT(getFLIRFrameRate(double)));
+    connect(this,SIGNAL(flirRecordingToggle(bool)),FLIR,SLOT(record(bool)));
+    connect(FLIR,SIGNAL(sendFrameCount(int)),this,SLOT(getFLIRFrameCount(int)));
     FLIRThread->start();
 }
 
@@ -160,7 +189,10 @@ void MainWindow::initKeyenceThread()
 
 void MainWindow::initMicrophoneThread()
 {
-    //
+    QThread* microphoneThread = new QThread;
+    microphone->moveToThread(microphoneThread);
+
+    microphoneThread->start();
 }
 
 void MainWindow::initUEThread()
@@ -225,44 +257,204 @@ bool MainWindow::connectFLIR()
         return false;
 }
 
-bool MainWindow::connectIntertest()
+bool MainWindow::connectIntertest() // NOT IMPLEMENTED
 {
-    ui->IntertestFrame->setStyleSheet("background: red");
-    ui->IntertestToggle->setEnabled(true);
+    ui->IntertestFrame->setStyleSheet("background: black");
+    ui->IntertestToggle->setEnabled(false);
     //connect
-    return true;
+    return false;
 }
 
-bool MainWindow::connectUE()
+bool MainWindow::connectUE() // NOT IMPLEMENTED
 {
-    ui->ueFrame->setStyleSheet("background: red");
-    ui->ueToggle->setEnabled(true);
+    ui->ueFrame->setStyleSheet("background: black");
+    ui->ueToggle->setEnabled(false);
     //connect
-    return true;
+    return false;
 }
 
-bool MainWindow::connectKeyence()
+bool MainWindow::connectKeyence() // NOT IMPLEMENTED
 {
-    ui->KeyenceFrame->setStyleSheet("background: red");
-    ui->KeyenceToggle->setEnabled(true);
+    ui->KeyenceFrame->setStyleSheet("background: black");
+    ui->KeyenceToggle->setEnabled(false);
     //connect
-    return true;
+    return false;
 }
 
 bool MainWindow::connectMicrophone()
 {
-    ui->MicrophoneFrame->setStyleSheet("background: red");
-    ui->MicrophoneToggle->setEnabled(true);
-    //connect
-    return true;
+    if(!MicrophoneConnected)
+    {
+        MicrophoneConnected = true;
+        ui->MicrophoneFrame->setStyleSheet("background: red");
+        ui->MicrophoneToggle->setEnabled(true);
+        return true;
+    }
+    else
+    {
+        ui->MicrophoneFrame->setStyleSheet("background: black");
+        return false;
+    }
 }
 
-bool MainWindow::connectArcAgent()
+bool MainWindow::connectArcAgent() // NOT IMPLEMENTED
 {
-    ui->ArcAgentFrame->setStyleSheet("background: red");
-    ui->ArcAgentToggle->setEnabled(true);
+    ui->ArcAgentFrame->setStyleSheet("background: black");
+    ui->ArcAgentToggle->setEnabled(false);
     //connect
-    return true;
+    return false;
+}
+
+void MainWindow::setupFFTDisplay()
+{
+    // Parameters defined in ../spectrum/app/spectrum.h
+    m_spectrograph->setParams(SpectrumNumBands, SpectrumLowFreq, SpectrumHighFreq);
+
+    // Place spectrograph in a box
+    ui->spectrograph->addWidget(m_spectrograph);
+
+    // Configure spectrograph
+    m_spectrograph->setFixedWidth(320);
+
+    // Configure Clip Event List Widget
+    QFont clipFont;
+    clipFont.setPointSize(10);
+    ui->list_clipEvents->setFont(clipFont);
+
+    // Configure Axis Labels
+    ui->xAxisLabel->setFixedHeight(20);
+    ui->xAxisLabel->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
+
+    int xAxisDivisions = 8;
+    QString xLabel = QString::number(SpectrumLowFreq);
+    int i;
+
+    double increment = 100*(ceil((SpectrumHighFreq - SpectrumLowFreq)/(xAxisDivisions*100)));
+
+    for(i = 1; i < xAxisDivisions - 1; i++)
+    {
+        xLabel = xLabel + "    " + QString::number(increment*i);
+    }
+
+    xLabel = xLabel + "    " + QString::number(SpectrumHighFreq);
+
+    QFont xAxisFont;
+    xAxisFont.setPointSize(10);
+    ui->xAxisLabel->setFont(xAxisFont);
+    ui->xAxisLabel->setText(xLabel);
+
+    // Configure Slider
+    ui->gainSlider->setMinimum(1);
+    ui->gainSlider->setMaximum(100);
+    ui->gainSlider->setTracking(true);
+    ui->gainSlider->setValue(15);
+
+    // Configure Colors
+    QString widgetColor = "silver";
+    ui->MicrophoneFrame->lower();
+    ui->MicrophoneDisplay->setStyleSheet("background: " + widgetColor);
+    ui->xAxisLabel->setStyleSheet("background: " + widgetColor);
+    ui->list_clipEvents->setStyleSheet("background: " + widgetColor);
+    ui->label_gain->setStyleSheet("background: " + widgetColor);
+    ui->gainSlider->setStyleSheet("background: " + widgetColor);
+    ui->label_refreshRate->setStyleSheet("background: " + widgetColor);
+}
+
+void MainWindow::setupFFTConnections()
+{
+    // UI Connections
+    connect(ui->connectDevicesButton,SIGNAL(clicked()),microphone,SLOT(runFFT())); // Start button fcn
+    connect(microphone,SIGNAL(startEngineRecording()),this,SLOT(updateToggleButton())); // start btn label
+    connect(microphone,SIGNAL(pauseEngineRecording()),this,SLOT(updateToggleButton())); // start btn label
+
+    // Engine
+    connect(microphone,SIGNAL(sendSpectrum(FrequencySpectrum)), // Pass spectrum
+            this,SLOT(getFFTSpectrum(FrequencySpectrum)));
+    connect(microphone,SIGNAL(sendRefreshRate(long long)), // Pass refresh rate
+            this,SLOT(getFFTRefreshRate(long long)));
+    connect(this,SIGNAL(sendFFTVisualizerGain(double)),
+            microphone,SLOT(getVisualizerGain(double)));
+    connect(this,SIGNAL(stopFFT()),microphone,SLOT(stopFFT()));
+
+    // Spectrograph
+    connect(this,SIGNAL(fetchTargetFrequencies()), // Ping for frequencies from fftinterface
+            microphone,SLOT(targetFreqSlot()));
+    connect(microphone,SIGNAL(sendTargetFrequencies(int*,int*)), // Get frequencies from fftinterface
+            this,SLOT(getTargetFrequencies(int*,int*)));
+    connect(this,SIGNAL(sendFFTTargetFrequencies(int*,int*)), // Send frequencies to the spectrograph
+            m_spectrograph,SLOT(setTargetFrequencies(int*,int*)));
+    connect(m_spectrograph,SIGNAL(targetFrequencyIsClipped(int)), // Get target value clipped flag
+            this,SLOT(getTargetFrequencyClipped(int)));
+
+    // Calls
+    fetchTargetFrequencies();
+}
+
+void MainWindow::getFFTSpectrum(const FrequencySpectrum &spectrum)
+{
+    m_spectrograph->spectrumChanged(spectrum);
+}
+
+void MainWindow::getFFTRefreshRate(long long refreshRateUs)
+{
+    double us = refreshRateUs;
+    //qDebug()<<us;
+    QString rate = QString::number(1000000/us,'f',0);
+
+    ui->label_refreshRate->setText("Refresh Rate: " + rate +" Hz");
+    ui->MicrophoneRefreshRate->setText(QString::number(1000000/us,'f',0)+"Hz");
+}
+
+void MainWindow::getTargetFrequencies(int* freq, int* max)
+{
+    for (int i = 1; i < freq[0]; i++) // copy to local scope
+    {
+        targetFrequencies[i] = freq[i];
+    }
+
+    sendFFTTargetFrequencies(freq,max);
+}
+
+void MainWindow::getTargetFrequencyClipped(int freqIndex)
+{
+    int maxMsgCount = 10;
+    int msgResetCount = maxMsgCount - 1; //
+
+    // Send to event list in UI
+    QString msg = "Bar " + QString::number(freqIndex) + " at " +
+            QString::number(targetFrequencies[freqIndex]) + "Hz";
+    ui->list_clipEvents->addItem(msg);
+
+    // Clean up event list to prevent overflow
+    if(ui->list_clipEvents->count() > maxMsgCount)
+    {
+        QString previous[msgResetCount]; // holds old messages
+        for (int i = 0; i < msgResetCount; i++)
+        {
+            previous[i] = ui->list_clipEvents->item(i + 1)->text();
+        }
+
+        ui->list_clipEvents->clear(); // clear it out
+        for (int i = 0; i < msgResetCount; i++) // ... and repopulate it
+        {
+            ui->list_clipEvents->addItem(previous[i]);
+        }
+    }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) // overridden
+{
+    stopFFT();
+    event->accept();
+    QApplication::quit();
+}
+
+void MainWindow::updateToggleButton()
+{/*
+    if(microphone->running)
+        ui->btn_runToggle->setText("Pause");
+    else
+        ui->btn_runToggle->setText("Start");*/
 }
 
 // ----- SLOTS ----- //
@@ -414,4 +606,12 @@ void MainWindow::on_ArcAgentToggle_clicked(bool checked)
         ui->ArcAgentFrame->setStyleSheet("background: green");
     else
         ui->ArcAgentFrame->setStyleSheet("background: red");
+}
+
+void MainWindow::on_gainSlider_valueChanged(int value)
+{
+    double gain = value; // 1-100
+    ui->label_gain->setText("Gain: " + QString::number(value) + "%");
+
+    sendFFTVisualizerGain(gain);
 }

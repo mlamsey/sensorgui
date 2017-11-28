@@ -6,9 +6,12 @@
 #include "tonegeneratordialog.h"
 #include "utils.h"
 
+#include <QThread>
 #include <QObject>
 #include <QDateTime>
 #include <QCoreApplication>
+
+#include <chrono>
 
 class fftinterface : public QObject
 { Q_OBJECT
@@ -21,8 +24,8 @@ public:
 
 private:
     // Refresh Rate
-    int prevSpectrumTime;
-    int currentSpectrumTime;
+    std::chrono::time_point<std::chrono::high_resolution_clock> prevSpectrumTime = std::chrono::high_resolution_clock::now();
+    std::chrono::time_point<std::chrono::high_resolution_clock> currentSpectrumTime = prevSpectrumTime;
 
     // FFT Information
     qint64 bufferTime;
@@ -32,6 +35,7 @@ private:
     void getFFTStats();
     void setupConnections();
     void startRecording();
+    void trackTime();
 
     // First element in each of the following arrays must be assigned as the length of the array!
     int targetFrequencies[6] = {6,440,750,1200,2400,3200}; // Hz
@@ -48,11 +52,12 @@ private slots:
 public slots:
     void getVisualizerGain(double gain);
     void targetFreqSlot();
+    void toggleMicrophoneSaving(bool state);
 
 signals:
     // To UI
     void sendSpectrum(const FrequencySpectrum &spectrum);
-    void sendRefreshRate(int refreshRateMs);
+    void sendRefreshRate(long long refreshRateUs);
 
     // To Engine
     void startEngineRecording();
@@ -60,6 +65,7 @@ signals:
     void stopEngineRecording(); // dumps data to file and resets buffer
     void sendVisualizerGain(double); // pass to engine
     void resetBuffer();
+    void toggleSavingData(bool state);
 
     // To UI & Engine
     void sendTargetFrequencies(int* frequencies, int* intensityThresholds);
