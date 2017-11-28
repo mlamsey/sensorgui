@@ -743,7 +743,7 @@ void Engine::createOutputDir()
     QString date = QDate::currentDate().toString();
     QString time = QTime::currentTime().toString();
     time.replace(":","_");
-    QString dir = "output/" + date + "/" + time;
+    QString dir = "output/" + date + "/" + time + "/microphone/";
     m_outputDir.setPath(dir);
 
     // Ensure output directory exists and is empty

@@ -51,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Initialize Threads
     initFLIRThread();
+    initMicrophoneThread();
 
     // Initialize Microphone
     setupFFTDisplay();
@@ -193,6 +194,8 @@ void MainWindow::initMicrophoneThread()
     microphone->moveToThread(microphoneThread);
 
     microphoneThread->start();
+
+    connect(this,SIGNAL(setMicrophoneSaving(bool)),microphone,SLOT(toggleMicrophoneSaving(bool)));
 }
 
 void MainWindow::initUEThread()

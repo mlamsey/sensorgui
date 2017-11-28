@@ -79,7 +79,7 @@ void Spectrograph::timerEvent(QTimerEvent *event)
 {
     Q_ASSERT(event->timerId() == m_timerId);
     Q_UNUSED(event) // suppress warnings in release builds
-    killTimer(m_timerId);
+    //killTimer(m_timerId);
     m_timerId = NullTimerId;
     m_barSelected = NullIndex;
     update();
@@ -324,9 +324,9 @@ void Spectrograph::selectBar(int index) {
                                 .arg(frequencyRange.second);
     emit infoMessage(message, BarSelectionInterval);
 
-    if (NullTimerId != m_timerId)
-        killTimer(m_timerId);
-    m_timerId = startTimer(BarSelectionInterval);
+    //if (NullTimerId != m_timerId)
+        //killTimer(m_timerId);
+    //m_timerId = startTimer(BarSelectionInterval);
 
     m_barSelected = index;
     update();
